@@ -11,6 +11,25 @@ import random
 from tqdm import tqdm
 from utils import plot_field, make_animation
 
+#%% independent variable lists
+
+## LBM geometry
+# lx = 80
+# ly = 80
+
+## Inlet velocity & viscosity
+# nu = 0.08
+# # v_left = 0.2  # 0.2 len(ly)
+# # VLEFT = np.full((ly), 0.2).tolist()
+# # v_left_np = np.full((ly), 0.2)
+# v_left_np = np.random.uniform(0.1, 0.3, ly)
+
+## Define simulation parameters
+# timesteps = 600
+# nnodes_per_cell = 4
+
+
+
 # %%
 
 ti.init(arch=ti.cpu)
@@ -245,8 +264,8 @@ def boundary_condition():
             for s in ti.static(range(Q)):
                 if I.x == 0:
                     if e_xy[s][0] == 1 and e_xy[s][1] == 0:
-                        # stream_f[I][s] = feq(s, rho[I], ti.Vector([v_left, v[I].y]))
-                        stream_f[I][s] = feq(s, rho[I], ti.Vector([v_left[I.y], v[I].y]))
+                        stream_f[I][s] = feq(s, rho[I], ti.Vector([v_left, v[I].y]))
+                        # stream_f[I][s] = feq(s, rho[I], ti.Vector([v_left[I.y], v[I].y]))
 
     for I in ti.grouped(v):
         if (I.x < lx and I.y < ly and is_solid[I] <= 0):
@@ -354,7 +373,7 @@ def initialize_npz(spheres):
     return data
 
 
-def run(max_step=1000, compute_loss=True):
+def run(max_step=1000, save_step=20, compute_loss=True):
     velocity = np.zeros((timesteps, nnodes, ndims))
     pressure = np.zeros((timesteps, nnodes, 1))
 
@@ -363,12 +382,18 @@ def run(max_step=1000, compute_loss=True):
         collision()
         streaming()
         boundary_condition()
-        velocity, pressure = export_npz(step // 20, velocity, pressure)
 
+        # Save to npz
+        if step % save_step == 0:
+            velocity, pressure = export_npz(step // 20, velocity, pressure)
+
+        # Save to vtk
         # if step % 200 == 0:
         #     export_VTK(step // 200)
 
+    # Reset `solid_count`
     solid_count = 0
+
     return velocity, pressure
 
 
@@ -386,8 +411,8 @@ colors = ['red', 'green', 'blue', 'orange', 'purple', 'cyan', 'pink']
 
 # Plotting the rectangular graph
 plt.figure(figsize=(8, 4), dpi=200)
-plt.xlim(0, 80)
-plt.ylim(0, 80)
+plt.xlim(0, lx)
+plt.ylim(0, ly)
 plt.gca().set_aspect('equal', adjustable='box')
 plt.grid(True)
 
