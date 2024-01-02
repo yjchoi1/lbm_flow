@@ -74,7 +74,12 @@ S_dig_vec[None] = ti.Vector([1, 1.5, 1.4, 1, 1.5, 1, 1.5, 1., 1.])
 
 # Fluid properties
 nu = 0.08
-v_left = 0.1
+# v_left = 0.2  # 0.2 len(ly)
+# VLEFT = np.full((ly), 0.2).tolist()
+# v_left_np = np.full((ly), 0.2)
+v_left_np = np.random.uniform(0.1, 0.3, ly)
+v_left = ti.field(ti.f32, shape=ly)
+v_left.from_numpy(v_left_np)
 
 ti.static(e_xy)
 ti.static(w)
@@ -240,7 +245,8 @@ def boundary_condition():
             for s in ti.static(range(Q)):
                 if I.x == 0:
                     if e_xy[s][0] == 1 and e_xy[s][1] == 0:
-                        stream_f[I][s] = feq(s, rho[I], ti.Vector([v_left, v[I].y]))
+                        # stream_f[I][s] = feq(s, rho[I], ti.Vector([v_left, v[I].y]))
+                        stream_f[I][s] = feq(s, rho[I], ti.Vector([v_left[I.y], v[I].y]))
 
     for I in ti.grouped(v):
         if (I.x < lx and I.y < ly and is_solid[I] <= 0):
