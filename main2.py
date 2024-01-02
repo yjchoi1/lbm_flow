@@ -6,8 +6,8 @@ import utils
 
 
 # LBM geometry
-lx = 80
-ly = 80
+lx = 320
+ly = 84
 
 # yc: assume node spacing in lbm and gns is the same.
 nodes_lx = lx  # yc: 80
@@ -24,12 +24,14 @@ nu = 0.08
 v_left_np = np.random.uniform(0.1, 0.3, ly)
 
 # Define simulation parameters
-timesteps = 600
+max_step = 10000
+save_step = 20
+timesteps = int(max_step / save_step)
 nnodes_per_cell = 4
 
 LBM = LBMModel(lx=lx, ly=ly, nu=nu, v_left_np=v_left_np, timesteps=timesteps)
 
-def run(max_step=1000, save_step=20):
+def run(max_step=max_step, save_step=save_step):
     velocity = np.zeros((timesteps, nnodes, ndims))
     pressure = np.zeros((timesteps, nnodes, 1))
 
@@ -41,15 +43,20 @@ def run(max_step=1000, save_step=20):
 
         # Save to npz
         if step % save_step == 0:
-            velocity, pressure = LBM.export_npz(step, velocity, pressure)
+            current_save_step = step//save_step
+            velocity, pressure = LBM.export_npz(current_save_step, velocity, pressure)
+        # velocity, pressure = LBM.export_npz(step // save_step, velocity, pressure)
 
     return velocity, pressure
 
 
 # Location and size of obstacles
-obs_x = [30, 32, 30, 31, 52, 50, 52, 51, 71, 70, 70, 68]  # obs_x = [70, 70, 70 ]
-obs_y = [10, 30, 50, 71, 10, 30, 50, 69, 10, 30, 50, 71]  # obs_y = [40, 40, 40]
-obs_r = [7, 7, 6, 7, 5, 7, 6, 7, 5, 6, 7, 7]  # obs_z = [12, 16, 20]
+# obs_x = [30, 32, 30, 31, 52, 50, 52, 51, 71, 70, 70, 68]  # obs_x = [70, 70, 70 ]
+# obs_y = [10, 30, 50, 71, 10, 30, 50, 69, 10, 30, 50, 71]  # obs_y = [40, 40, 40]
+# obs_r = [7, 7, 6, 7, 5, 7, 6, 7, 5, 6, 7, 7]  # obs_z = [12, 16, 20]
+obs_x = [100]  # obs_x = [70, 70, 70 ]
+obs_y = [40]  # obs_y = [40, 40, 40]
+obs_r = [15]
 # Location and size of obstacles
 colors = ['red', 'green', 'blue', 'orange', 'purple', 'cyan', 'pink']
 
@@ -71,7 +78,7 @@ for i, (x, y, r) in enumerate(zip(obs_x, obs_y, obs_r)):
 
 obs_info = "spheres"
 data = LBM.initialize_npz(spheres)
-data['velocity'], data['pressure'] = run(max_step=10000)
+data['velocity'], data['pressure'] = run(max_step=10000, save_step=20)
 LBM.is_solid.fill(0)
 
 LBM.parent_dict[obs_info] = data
@@ -82,8 +89,8 @@ np.savez('GNS_Obstacle.npz', **LBM.parent_dict)
 timestep = 2
 total_timestep = 500
 # Assume x_range and y_range are given
-x_range = [-0.01, 0.8]
-y_range = [-0.02, 0.8]
+x_range = [-0.01, 1.6]
+y_range = [-0.02, 0.4]
 
 # Call the function
 for obs in LBM.parent_dict.keys():

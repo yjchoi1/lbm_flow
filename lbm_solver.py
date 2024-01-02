@@ -98,7 +98,7 @@ class LBMModel:
         self.ncells_row = self.lx - 1  # Number of cells per row
 
         # Define physical parameters
-        self.lx_physical = 0.8
+        self.lx_physical = 1.6
         # Compute physical spacing between nodes
         self.dx = self.dy = self.lx_physical / self.lx
 
@@ -231,7 +231,7 @@ class LBMModel:
                 for s in ti.static(range(self.Q)):
                     if I.x == 0:
                         if self.e_xy[s][0] == 1 and self.e_xy[s][1] == 0:
-                            self.stream_f[I][s] = self.feq(s, self.rho[I], ti.Vector([self.v_left, self.v[I].y]))
+                            self.stream_f[I][s] = self.feq(s, self.rho[I], ti.Vector([self.v_left[I.y], self.v[I].y]))
 
         for I in ti.grouped(self.v):
             if (I.x < self.lx and I.y < self.ly and self.is_solid[I] <= 0):
@@ -261,7 +261,7 @@ class LBMModel:
         rho_ = self.rho.to_numpy()[0:self.lx, 0:self.ly]
         velocity[timestep, :, 0] = v_[self.lbm_x, self.lbm_y, 0]
         velocity[timestep, :, 1] = v_[self.lbm_x, self.lbm_y, 1]
-        pressure[timestep, :, 0] = rho_[[self.lbm_x, self.lbm_y]]
+        pressure[timestep, :, 0] = rho_[self.lbm_x, self.lbm_y]
         return velocity, pressure
 
     def initialize_npz(self, spheres):

@@ -45,8 +45,8 @@ vec = lambda: ti.Vector.field(dim, dtype=real)
 vec_Q = lambda: ti.Vector.field(Q, dtype=real)
 
 # Input parameters
-lx = 80  # yc: 320
-ly = 80  # yc: 84
+lx = 320  # yc: 320
+ly = 84  # yc: 84
 
 is_solid = scalar_int()
 v = vec()
@@ -126,7 +126,7 @@ ncells_row = nodes_lx - 1  # Number of cells per row
 
 # Define physical parameters
 # yc: used to be dx = dy = 0.8 / nodes_lx
-lx_physical = 0.8
+lx_physical = 1.6
 # Based on lx_physical, compute physical spacing between nodes (assuming equal spacing in x and y)
 dx = dy = lx_physical / nodes_lx
 
@@ -264,8 +264,7 @@ def boundary_condition():
             for s in ti.static(range(Q)):
                 if I.x == 0:
                     if e_xy[s][0] == 1 and e_xy[s][1] == 0:
-                        stream_f[I][s] = feq(s, rho[I], ti.Vector([v_left, v[I].y]))
-                        # stream_f[I][s] = feq(s, rho[I], ti.Vector([v_left[I.y], v[I].y]))
+                        stream_f[I][s] = feq(s, rho[I], ti.Vector([v_left[I.y], v[I].y]))
 
     for I in ti.grouped(v):
         if (I.x < lx and I.y < ly and is_solid[I] <= 0):
@@ -373,7 +372,7 @@ def initialize_npz(spheres):
     return data
 
 
-def run(max_step=1000, save_step=20, compute_loss=True):
+def run(max_step=10000, save_step=20, compute_loss=True):
     velocity = np.zeros((timesteps, nnodes, ndims))
     pressure = np.zeros((timesteps, nnodes, 1))
 
@@ -382,10 +381,12 @@ def run(max_step=1000, save_step=20, compute_loss=True):
         collision()
         streaming()
         boundary_condition()
-
+        # velocity, pressure = export_npz(step//save_step, velocity,pressure)
         # Save to npz
         if step % save_step == 0:
-            velocity, pressure = export_npz(step // 20, velocity, pressure)
+            current_save_step = step//save_step
+            velocity, pressure = export_npz(current_save_step, velocity, pressure)
+
 
         # Save to vtk
         # if step % 200 == 0:
@@ -401,9 +402,13 @@ def run(max_step=1000, save_step=20, compute_loss=True):
 # Location and size of obstacles
 # Change the location and size of the obstacle(s)
 ##Note: lx = 320 ly = 84
-obs_x = [30, 32, 30, 31, 52, 50, 52, 51, 71, 70, 70, 68]  # obs_x = [70, 70, 70 ]
-obs_y = [10, 30, 50, 71, 10, 30, 50, 69, 10, 30, 50, 71]  # obs_y = [40, 40, 40]
-obs_r = [7, 7, 6, 7, 5, 7, 6, 7, 5, 6, 7, 7]  # obs_z = [12, 16, 20]
+# obs_x = [30, 32, 30, 31, 52, 50, 52, 51, 71, 70, 70, 68]  # obs_x = [70, 70, 70 ]
+# obs_y = [10, 30, 50, 71, 10, 30, 50, 69, 10, 30, 50, 71]  # obs_y = [40, 40, 40]
+# obs_r = [7, 7, 6, 7, 5, 7, 6, 7, 5, 6, 7, 7]  # obs_z = [12, 16, 20]
+
+obs_x = [70]  # obs_x = [70, 70, 70 ]
+obs_y = [40]  # obs_y = [40, 40, 40]
+obs_r = [12]  # obs_z = [12, 16, 20]
 
 # %%
 # Location and size of obstacles
@@ -446,8 +451,8 @@ np.savez('GNS_Obstacle.npz', **parent_dict)
 timestep = 2
 total_timestep = 500
 # Assume x_range and y_range are given
-x_range = [-0.01, 0.8]
-y_range = [-0.02, 0.8]
+x_range = [-0.01, 1.6]
+y_range = [-0.02, 0.4]
 
 # Call the function
 for obs in parent_dict.keys():

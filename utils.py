@@ -7,7 +7,7 @@ from matplotlib.ticker import FormatStrFormatter
 def make_animation(
         dict_input, obs_info, total_timestep, nodes_lx, nodes_ly, x_range, y_range):
 
-    fig = plt.figure(figsize=(12, 12))
+    fig = plt.figure(figsize=(40, 10))
 
     # Calculate global min and max velocity magnitudes across all timesteps
     all_velocities = np.concatenate([dict_input[obs_info]["velocity"][timestep] for timestep in range(total_timestep)])
@@ -51,9 +51,9 @@ def make_animation(
 
         # Scatter plot for each node type with different color
         ax.scatter(pos_timestep[mask0, 0], pos_timestep[mask0, 1], color='blue', s=1, label='Normal nodes')
-        ax.scatter(pos_timestep[mask4, 0], pos_timestep[mask4, 1], color='orange', s=10, label='Inlet nodes')
-        ax.scatter(pos_timestep[mask5, 0], pos_timestep[mask5, 1], color='green', s=10, label='Outlet nodes')
-        ax.scatter(pos_timestep[mask6, 0], pos_timestep[mask6, 1], color='red', s=3, label='Wall boundary')
+        ax.scatter(pos_timestep[mask4, 0], pos_timestep[mask4, 1], color='orange', s=1, label='Inlet nodes')
+        ax.scatter(pos_timestep[mask5, 0], pos_timestep[mask5, 1], color='green', s=1, label='Outlet nodes')
+        ax.scatter(pos_timestep[mask6, 0], pos_timestep[mask6, 1], color='red', s=1, label='Wall boundary')
 
         # Create a colorbar and reduce its height
         cbar = fig.colorbar(cntr, ax=ax, shrink=0.4)
@@ -79,13 +79,13 @@ def make_animation(
     ani = FuncAnimation(
         fig, animate, frames=np.arange(0, total_timestep, 5), interval=20)
 
-    ani.save('ani.gif', dpi=100, fps=30, writer='imagemagick')
+    ani.save('ani.gif', dpi=100, fps=15, writer='imagemagick')
     # print(f"Animation saved to: {animation_filename}")
 
 def plot_field(
         dict_input, obs_info, timestep, nodes_lx, nodes_ly, x_range, y_range):
 
-    fig = plt.figure(figsize=(12, 12))
+    fig = plt.figure(figsize=(40, 10))
 
     # Increase figure size and DPI for better resolution
     ax = fig.add_subplot(1, 1, 1, projection='rectilinear')
