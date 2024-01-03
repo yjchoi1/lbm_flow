@@ -5,7 +5,7 @@ from tqdm import tqdm
 
 @ti.data_oriented
 class LBMModel:
-    def __init__(self, lx, ly, nu, v_left_np, timesteps):
+    def __init__(self, lx, ly, lx_physical, nu, v_left_np, timesteps):
 
         # Initialize Taichi
         ti.init(arch=ti.gpu)
@@ -24,8 +24,11 @@ class LBMModel:
         # Setting the input parameters
         self.lx = lx
         self.ly = ly
+        self.lx_physical = lx_physical
         self.nu = nu
         self.v_left_np = v_left_np
+        self.v_left = ti.field(ti.f32, shape=self.ly)
+        self.v_left.from_numpy(self.v_left_np)
         self.timesteps = timesteps
 
         # Initialize solid_count
@@ -43,7 +46,10 @@ class LBMModel:
         self.stream_f = vec_Q()
 
         # Place fields in the memory layout
-        ti.root.dense(ti.ij, (self.lx, self.ly)).place(self.is_solid, self.target_v, self.target_rho, self.rho, self.v, self.temp_v, self.collide_f, self.stream_f)
+        ti.root.dense(
+            ti.ij, (self.lx, self.ly)
+        ).place(
+            self.is_solid, self.target_v, self.target_rho, self.rho, self.v, self.temp_v, self.collide_f, self.stream_f)
 
         # Initialize other parameters and fields
         self._initialize_parameters()
@@ -81,8 +87,7 @@ class LBMModel:
         self.S_dig_vec[None] = ti.Vector(S_dig_vec_np)
 
         # Fluid properties
-        self.v_left = ti.field(ti.f32, shape=self.ly)
-        self.v_left.from_numpy(self.v_left_np)
+
 
         # Static fields
         ti.static(self.e_xy)
@@ -97,8 +102,6 @@ class LBMModel:
         self.ncells = (self.ly - 1) * (self.lx - 1)  # Total number of cells
         self.ncells_row = self.lx - 1  # Number of cells per row
 
-        # Define physical parameters
-        self.lx_physical = 1.6
         # Compute physical spacing between nodes
         self.dx = self.dy = self.lx_physical / self.lx
 
@@ -138,11 +141,11 @@ class LBMModel:
         iout = i
         if i[0] < 0:
             iout[0] = self.lx - 1
-        if i[0] >= self.lx:
+        if i[0] >= self.lx - 1:
             iout[0] = 0
         if i[1] < 0:
             iout[1] = self.ly - 1
-        if i[1] >= self.ly:
+        if i[1] >= self.ly - 1:
             iout[1] = 0
 
         return iout
@@ -152,8 +155,8 @@ class LBMModel:
         velocity_vec = ti.Vector([0.0, 0.0])
         for i in ti.static(range(2)):
             for s in ti.static(range(self.Q)):
-                velocity_vec[i] += self.stream_f[local_pos][s] * self.e_xy[s][i]
-            velocity_vec[i] /= self.rho[local_pos]
+                velocity_vec[i] = velocity_vec[i] + self.stream_f[local_pos][s] * self.e_xy[s][i]
+            velocity_vec[i] = velocity_vec[i] / self.rho[local_pos]
 
         return velocity_vec
 
@@ -182,7 +185,7 @@ class LBMModel:
         for I in ti.grouped(self.collide_f):
             if (I.x < self.lx and I.y < self.ly and self.is_solid[I] <= 0):
                 # MRT operator
-                v_I = self.velocity_vec(I)
+                self.v[I] = self.velocity_vec(I)
 
                 e = -4 * self.collide_f[I][0] + 2 * self.collide_f[I][1] - self.collide_f[I][2] + 2 * self.collide_f[I][
                     3] - self.collide_f[I][4] + 2 * self.collide_f[I][5] - self.collide_f[I][6] + 2 * self.collide_f[I][
@@ -306,7 +309,7 @@ class LBMModel:
             "node_type": node_type,
             "velocity": np.zeros((self.timesteps, self.nnodes, self.ndims)),  # To be filled during simulation
             "cells": cell,
-            "pressure": np.zeros((self.timesteps, self.nnodes, 1))  # To be filled during simulation
+            # "pressure": np.zeros((self.timesteps, self.nnodes, 1))  # To be filled during simulation
         }
 
         return data

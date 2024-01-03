@@ -3,11 +3,48 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from matplotlib.ticker import FormatStrFormatter
 
+MARKER_SIZE = 0.1
+SIZE_FACTOR = 10
+
+
+def gen_circles(n, x_max, y_max, max_radius):
+    circles = []
+
+    def is_overlapping(new_circle):
+        x_new, y_new, r_new = new_circle
+        for x, y, r in circles:
+            if np.sqrt((x_new - x) ** 2 + (y_new - y) ** 2) < (r_new + r):
+                return True
+        return False
+
+    while len(circles) < n:
+        radius = np.random.uniform(0, max_radius)
+        x = np.random.uniform(radius, x_max - radius)
+        y = np.random.uniform(radius, y_max - radius)
+        new_circle = (x, y, radius)
+
+        if not is_overlapping(new_circle):
+            circles.append(new_circle)
+
+    return circles
+
+def plot_config(spheres, nodes_lx, nodes_ly):
+
+    fig, ax = plt.subplots(1, 1, figsize=(nodes_lx/SIZE_FACTOR, nodes_ly/SIZE_FACTOR))
+    for i, (x, y, r) in enumerate(spheres):
+        circle = plt.Circle((x, y), r, facecolor='none')
+        ax.add_patch(circle)
+        ax.text(x, y + r, str(i), ha='center', va='bottom')
+    ax.xlim(0, nodes_lx)
+    ax.ylim(0, nodes_ly)
+    ax.set_aspect('equal', 'box')
+    ax.grid(visible=True)
+
 
 def make_animation(
         dict_input, obs_info, total_timestep, nodes_lx, nodes_ly, x_range, y_range):
 
-    fig = plt.figure(figsize=(40, 10))
+    fig = plt.figure(figsize=(nodes_lx/SIZE_FACTOR, nodes_ly/SIZE_FACTOR))
 
     # Calculate global min and max velocity magnitudes across all timesteps
     all_velocities = np.concatenate([dict_input[obs_info]["velocity"][timestep] for timestep in range(total_timestep)])
@@ -50,10 +87,10 @@ def make_animation(
             contour_levels, cmap='cividis', vmin=global_vel_mag_min, vmax=global_vel_mag_max)
 
         # Scatter plot for each node type with different color
-        ax.scatter(pos_timestep[mask0, 0], pos_timestep[mask0, 1], color='blue', s=1, label='Normal nodes')
-        ax.scatter(pos_timestep[mask4, 0], pos_timestep[mask4, 1], color='orange', s=1, label='Inlet nodes')
-        ax.scatter(pos_timestep[mask5, 0], pos_timestep[mask5, 1], color='green', s=1, label='Outlet nodes')
-        ax.scatter(pos_timestep[mask6, 0], pos_timestep[mask6, 1], color='red', s=1, label='Wall boundary')
+        ax.scatter(pos_timestep[mask0, 0], pos_timestep[mask0, 1], color='blue', s=MARKER_SIZE, label='Normal nodes')
+        ax.scatter(pos_timestep[mask4, 0], pos_timestep[mask4, 1], color='orange', s=MARKER_SIZE, label='Inlet nodes')
+        ax.scatter(pos_timestep[mask5, 0], pos_timestep[mask5, 1], color='green', s=MARKER_SIZE, label='Outlet nodes')
+        ax.scatter(pos_timestep[mask6, 0], pos_timestep[mask6, 1], color='red', s=MARKER_SIZE, label='Wall boundary')
 
         # Create a colorbar and reduce its height
         cbar = fig.colorbar(cntr, ax=ax, shrink=0.4)
@@ -85,7 +122,7 @@ def make_animation(
 def plot_field(
         dict_input, obs_info, timestep, nodes_lx, nodes_ly, x_range, y_range):
 
-    fig = plt.figure(figsize=(40, 10))
+    fig = plt.figure(figsize=(nodes_lx/SIZE_FACTOR, nodes_ly/SIZE_FACTOR))
 
     # Increase figure size and DPI for better resolution
     ax = fig.add_subplot(1, 1, 1, projection='rectilinear')
@@ -121,10 +158,10 @@ def plot_field(
         contour_levels, cmap='cividis', vmin=vel_mag_min, vmax=vel_mag_max)
 
     # Scatter plot for each node type with different color
-    ax.scatter(pos_timestep[mask0, 0], pos_timestep[mask0, 1], color='blue', s=1, label='Normal nodes')
-    ax.scatter(pos_timestep[mask4, 0], pos_timestep[mask4, 1], color='orange', s=10, label='Inlet nodes')
-    ax.scatter(pos_timestep[mask5, 0], pos_timestep[mask5, 1], color='green', s=10, label='Outlet nodes')
-    ax.scatter(pos_timestep[mask6, 0], pos_timestep[mask6, 1], color='red', s=3, label='Wall boundary')
+    ax.scatter(pos_timestep[mask0, 0], pos_timestep[mask0, 1], color='blue', s=MARKER_SIZE, label='Normal nodes')
+    ax.scatter(pos_timestep[mask4, 0], pos_timestep[mask4, 1], color='orange', s=MARKER_SIZE, label='Inlet nodes')
+    ax.scatter(pos_timestep[mask5, 0], pos_timestep[mask5, 1], color='green', s=MARKER_SIZE, label='Outlet nodes')
+    ax.scatter(pos_timestep[mask6, 0], pos_timestep[mask6, 1], color='red', s=MARKER_SIZE, label='Wall boundary')
 
     # Create a colorbar and reduce its height
     cbar = fig.colorbar(cntr, ax=ax, shrink=0.4)
