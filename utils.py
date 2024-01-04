@@ -7,7 +7,10 @@ MARKER_SIZE = 0.1
 SIZE_FACTOR = 10
 
 
-def gen_circles(n, x_max, y_max, max_radius):
+def gen_circles(n, x_max, y_max, radius_range):
+
+    x_min_offset = 3
+    y_min_offset = 0
     circles = []
 
     def is_overlapping(new_circle):
@@ -17,32 +20,71 @@ def gen_circles(n, x_max, y_max, max_radius):
                 return True
         return False
 
+    i = 0
     while len(circles) < n:
-        radius = np.random.uniform(0, max_radius)
-        x = np.random.uniform(radius, x_max - radius)
-        y = np.random.uniform(radius, y_max - radius)
+        radius = np.random.randint(radius_range[0], radius_range[1])
+        x = np.random.randint(radius + x_min_offset, x_max)
+        y = np.random.randint(0, y_max)
         new_circle = (x, y, radius)
 
+        # prevent infinite loop
+        i += 1
+        if i > 1e6:
+            break
+
+        # Check overlap of the new circle and append if pass
         if not is_overlapping(new_circle):
             circles.append(new_circle)
 
     return circles
 
-def plot_config(spheres, nodes_lx, nodes_ly):
 
-    fig, ax = plt.subplots(1, 1, figsize=(nodes_lx/SIZE_FACTOR, nodes_ly/SIZE_FACTOR))
-    for i, (x, y, r) in enumerate(spheres):
-        circle = plt.Circle((x, y), r, facecolor='none')
-        ax.add_patch(circle)
-        ax.text(x, y + r, str(i), ha='center', va='bottom')
-    ax.xlim(0, nodes_lx)
-    ax.ylim(0, nodes_ly)
-    ax.set_aspect('equal', 'box')
-    ax.grid(visible=True)
+def visualize_circles_and_grid(circles, x_max, y_max, grid_spacing=1):
+    # Create the grid points
+    x_grid = np.arange(0, x_max, grid_spacing)
+    y_grid = np.arange(0, y_max, grid_spacing)
+    grid_points = np.array([(x, y) for x in x_grid for y in y_grid])
+
+    # Function to check if a point is inside any circle
+    def is_inside_any_circle(point):
+        for x, y, r in circles:
+            if np.sqrt((point[0] - x) ** 2 + (point[1] - y) ** 2) <= r:
+                return True
+        return False
+
+    # Color points based on whether they are inside a circle or not
+    colors = ['red' if is_inside_any_circle(point) else 'gray' for point in grid_points]
+    sizes = [3 if is_inside_any_circle(point) else 1 for point in grid_points]
+
+    # Plotting
+    plt.figure(figsize=(10, 10))
+    plt.scatter(grid_points[:, 0], grid_points[:, 1], c=colors, s=sizes)
+    plt.xlim(0, x_max)
+    plt.ylim(0, y_max)
+    plt.title("Grid Points and Circles Visualization")
+    plt.xlabel("X-axis")
+    plt.ylabel("Y-axis")
+    plt.grid(True)
+    plt.show()
+
+
+# def plot_config(spheres, nodes_lx, nodes_ly):
+#
+#     fig, ax = plt.subplots(1, 1, figsize=(nodes_lx/SIZE_FACTOR, nodes_ly/SIZE_FACTOR))
+#     for i, (x, y, r) in enumerate(spheres):
+#         circle = plt.Circle((x, y), r, facecolor='none')
+#         ax.add_patch(circle)
+#         ax.text(x, y + r, str(i), ha='center', va='bottom')
+#     ax.xlim(0, nodes_lx)
+#     ax.ylim(0, nodes_ly)
+#     ax.set_aspect('equal', 'box')
+#     ax.grid(visible=True)
 
 
 def make_animation(
-        dict_input, obs_info, total_timestep, nodes_lx, nodes_ly, x_range, y_range):
+        dict_input, obs_info, total_timestep, nodes_lx, nodes_ly, x_range, y_range,
+        output_path
+):
 
     fig = plt.figure(figsize=(nodes_lx/SIZE_FACTOR, nodes_ly/SIZE_FACTOR))
 
@@ -88,9 +130,9 @@ def make_animation(
 
         # Scatter plot for each node type with different color
         ax.scatter(pos_timestep[mask0, 0], pos_timestep[mask0, 1], color='blue', s=MARKER_SIZE, label='Normal nodes')
-        ax.scatter(pos_timestep[mask4, 0], pos_timestep[mask4, 1], color='orange', s=MARKER_SIZE, label='Inlet nodes')
-        ax.scatter(pos_timestep[mask5, 0], pos_timestep[mask5, 1], color='green', s=MARKER_SIZE, label='Outlet nodes')
-        ax.scatter(pos_timestep[mask6, 0], pos_timestep[mask6, 1], color='red', s=MARKER_SIZE, label='Wall boundary')
+        ax.scatter(pos_timestep[mask4, 0], pos_timestep[mask4, 1], color='orange', s=MARKER_SIZE*2, label='Inlet nodes')
+        ax.scatter(pos_timestep[mask5, 0], pos_timestep[mask5, 1], color='green', s=MARKER_SIZE*2, label='Outlet nodes')
+        ax.scatter(pos_timestep[mask6, 0], pos_timestep[mask6, 1], color='red', s=MARKER_SIZE*2, label='Wall boundary')
 
         # Create a colorbar and reduce its height
         cbar = fig.colorbar(cntr, ax=ax, shrink=0.4)
@@ -116,11 +158,12 @@ def make_animation(
     ani = FuncAnimation(
         fig, animate, frames=np.arange(0, total_timestep, 5), interval=20)
 
-    ani.save('ani.gif', dpi=100, fps=15, writer='imagemagick')
+    ani.save(output_path, dpi=100, fps=15, writer='imagemagick')
     # print(f"Animation saved to: {animation_filename}")
 
 def plot_field(
-        dict_input, obs_info, timestep, nodes_lx, nodes_ly, x_range, y_range):
+        dict_input, obs_info, timestep, nodes_lx, nodes_ly, x_range, y_range,
+        output_path):
 
     fig = plt.figure(figsize=(nodes_lx/SIZE_FACTOR, nodes_ly/SIZE_FACTOR))
 
@@ -159,9 +202,9 @@ def plot_field(
 
     # Scatter plot for each node type with different color
     ax.scatter(pos_timestep[mask0, 0], pos_timestep[mask0, 1], color='blue', s=MARKER_SIZE, label='Normal nodes')
-    ax.scatter(pos_timestep[mask4, 0], pos_timestep[mask4, 1], color='orange', s=MARKER_SIZE, label='Inlet nodes')
-    ax.scatter(pos_timestep[mask5, 0], pos_timestep[mask5, 1], color='green', s=MARKER_SIZE, label='Outlet nodes')
-    ax.scatter(pos_timestep[mask6, 0], pos_timestep[mask6, 1], color='red', s=MARKER_SIZE, label='Wall boundary')
+    ax.scatter(pos_timestep[mask4, 0], pos_timestep[mask4, 1], color='orange', s=MARKER_SIZE*2, label='Inlet nodes')
+    ax.scatter(pos_timestep[mask5, 0], pos_timestep[mask5, 1], color='green', s=MARKER_SIZE*2, label='Outlet nodes')
+    ax.scatter(pos_timestep[mask6, 0], pos_timestep[mask6, 1], color='red', s=MARKER_SIZE*2, label='Wall boundary')
 
     # Create a colorbar and reduce its height
     cbar = fig.colorbar(cntr, ax=ax, shrink=0.4)
@@ -184,6 +227,6 @@ def plot_field(
     ax.set_aspect("equal")
     # plt.show()
 
-    plt.savefig(f'field_t{timestep}.png')
+    plt.savefig(output_path)
     # print(f"Animation saved to: {animation_filename}")
 

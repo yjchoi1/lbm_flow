@@ -1,112 +1,122 @@
+import argparse
 import numpy as np
-import matplotlib.pyplot as plt
+import json
+import os
 from tqdm import tqdm
 from lbm_solver import LBMModel
 import utils
 
 
-# LBM geometry
-lx = 80
-ly = 80
-lx_physical = 1.6
-dx = dy = lx_physical/lx
-ly_physical = dy * ly
-
-# yc: assume node spacing in lbm and gns is the same.
-nodes_lx = lx  # yc: 80
-nodes_ly = ly  # yc: 21
-
-# Compute derived parameters
-nnodes = nodes_lx * nodes_ly  # Total number of nodes
-ndims = 2  # Number of dimensions
-ncells = (nodes_ly - 1) * (nodes_lx - 1)  # Total number of cells
-ncells_row = nodes_lx - 1  # Number of cells per row
-
-# Inlet velocity & viscosity
-nu = 0.0001
-v_left_np = np.random.uniform(0.008, 0.015, ly)
-
-# Define simulation parameters
-max_step = 10000
-save_step = 20
-timesteps = int(max_step / save_step)
-nnodes_per_cell = 4
-
-# Init LBM solver with the current domain setting
-LBM = LBMModel(
-    lx=lx, ly=ly, lx_physical=lx_physical, nu=nu, v_left_np=v_left_np, timesteps=timesteps)
-
 # Define run LBM
-def run(max_step=max_step, save_step=save_step):
-    velocity = np.zeros((timesteps, nnodes, ndims))
-    pressure = np.zeros((timesteps, nnodes, 1))
+def run(lbm_timesteps, save_interval):
 
+    # Get simulation information
+    nnodes = LBM.lx * LBM.ly
+
+    # Initiate vel and pressure array
+    velocity = np.zeros((LBM.timesteps, nnodes, LBM.ndims))
+    pressure = np.zeros((LBM.timesteps, nnodes, 1))
     LBM.init_field()
-    for step in tqdm(range(max_step)):
+
+    # Start simulation
+    for step in tqdm(range(lbm_timesteps)):
         LBM.boundary_condition()
         LBM.collision()
         LBM.streaming()
 
         # Save to npz
-        # if step == 1:
-        #     velocity, pressure = LBM.export_npz(current_save_step, velocity, pressure)
-        if step % save_step == 0:
-            current_save_step = step//save_step
+        if step % save_interval == 0:
+            current_save_step = step//save_interval
             velocity, pressure = LBM.export_npz(current_save_step, velocity, pressure)
-        # velocity, pressure = LBM.export_npz(step // save_step, velocity, pressure)
 
     return velocity, pressure
 
 
-# # Location and size of obstacles
-obs_x = [30, 32, 30, 31, 52, 50, 52, 51, 71, 70, 70, 68]  # obs_x = [70, 70, 70 ]
-obs_y = [10, 30, 50, 71, 10, 30, 50, 69, 10, 30, 50, 71]  # obs_y = [40, 40, 40]
-obs_r = [7, 7, 6, 7, 5, 7, 6, 7, 5, 6, 7, 7]  # obs_z = [12, 16, 20]
-# obs_x = [50]  # obs_x = [70, 70, 70 ]
-# obs_y = [5]  # obs_y = [40, 40, 40]
-# obs_r = [10]
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--input_path', default="config.json", type=str, help="Input json file name")
+    args = parser.parse_args()
 
-# Plotting the rectangular graph
-plt.figure(figsize=(8, 4), dpi=200)
-plt.xlim(0, lx)
-plt.ylim(0, ly)
-plt.gca().set_aspect('equal', adjustable='box')
-plt.grid(True)
+    input_path = args.input_path
+    follow_taichi_coord = True
+    f = open(input_path)
+    inputs = json.load(f)
+    f.close()
 
-# Plotting the circles' edges
-spheres = []
-for i, (x, y, r) in enumerate(zip(obs_x, obs_y, obs_r)):
-    circle = plt.Circle((x, y), r, facecolor='none', linewidth=2.5)
-    plt.gca().add_patch(circle)
-    plt.text(x, y + r, str(i), ha='center', va='bottom')
-    spheres.append([x, y, r])
+    simulation_name = inputs["simulation_name"]
+    simulation_ids = np.arange(inputs["simulation_id_range"][0], inputs["simulation_id_range"][1])
 
-# Run LBM
-obs_info = "spheres"
-data = LBM.initialize_npz(spheres)
-data['velocity'], data['pressure'] = run(max_step=10000, save_step=20)
-# Reset solid nodes after LBM solver ends
-LBM.is_solid.fill(0)
+    # Set output directory
+    output_dir = inputs["output_dir"]
+    if not os.path.exists(output_dir):
+      os.makedirs(output_dir)
 
-# Export data
-LBM.parent_dict[obs_info] = data
-# np.savez_compressed('GNS_Obstacle.npz', **LBM.parent_dict)
+    # Set simulation config
+    sim_config = inputs["sim_config"]
+    # LBM geometry
+    lx = sim_config["lx"]
+    ly = sim_config["ly"]
+    lx_physical = sim_config["lx_physical"]
+    dx = dy = lx_physical / lx
+    ly_physical = dy * ly
+    # Inlet velocity & viscosity
+    # TODO: make a table for proper range of nu & vel & n_circles
+    nu = sim_config["nu"]
+    # TODO: velocity distribution options
+    if sim_config["initial_vel"]["option"] == "uniform":
+        args = sim_config["initial_vel"]["args"]
+        v_left_np = np.random.uniform(args[0], args[1], args[2])
+    elif sim_config["initial_vel"]["option"] == "normal":
+        pass
+    elif sim_config["initial_vel"]["option"] == "quad":
+        pass
+    else:
+        raise ValueError("Not implemented velocity option! Choose among `normal`, `uniform, `quad`")
 
-#%%
-# Plot specific timestep
-vis_steps = [0, 1, 2, 10, 50, 100, 150, 200, 300, 400, 499]
-x_range = [0, lx_physical]
-y_range = [0, ly_physical]
+    # Define simulation parameters
+    lbm_timesteps = sim_config["lbm_timesteps"]
+    save_interval = sim_config["save_interval"]
+    npz_timesteps = int(lbm_timesteps / save_interval)
 
-for obs in LBM.parent_dict.keys():
-    for vis_step in vis_steps:
-        utils.plot_field(LBM.parent_dict, obs, vis_step, nodes_lx, nodes_ly, x_range, y_range)
+    for i in simulation_ids:
+        simulation_name = f"{simulation_name}{i}"
+        # Init LBM solver with the current domain setting
+        LBM = LBMModel(
+            lx=lx, ly=ly, lx_physical=lx_physical, nu=nu, v_left_np=v_left_np, timesteps=npz_timesteps)
 
-# Make animation
-total_timestep = timesteps
-# Call the function
-for obs in LBM.parent_dict.keys():
-    utils.make_animation(LBM.parent_dict, obs, total_timestep, nodes_lx, nodes_ly, x_range, y_range)
-    # plot_field(parent_dict, obs, total_timestep, nodes_lx, nodes_ly, x_range, y_range)
+        circles = utils.gen_circles(10, x_max=lx, y_max=ly, radius_range=[7, 10])
+        utils.visualize_circles_and_grid(circles, lx, ly)
 
-a=1
+        # Run LBM
+        # Place circular obstacles
+        data = LBM.initialize_npz(circles)
+        # Run lbm solver
+        data['velocity'], data['pressure'] = run(lbm_timesteps=lbm_timesteps, save_interval=save_interval)
+        # Reset solid nodes after LBM solver ends
+        LBM.is_solid.fill(0)
+        # Save result data
+        LBM.result_dict[simulation_name] = data
+        # Export to npz
+        np.savez(f'{output_dir}/{simulation_name}.npz', **LBM.result_dict)
+
+        # Visualization
+        if i % inputs["vis_config"]["field_save_interval"] == 0:
+            if inputs["vis_config"]["save_field"] == True:
+                vis_steps = [0, 1, 2, 10, 50, 100, 150, 200, 300, 400, 499]
+                x_range = [0, lx_physical]
+                y_range = [0, ly_physical]
+
+                for sim_data in LBM.result_dict.keys():
+                    for vis_step in vis_steps:
+                        utils.plot_field(
+                            LBM.result_dict, sim_data, vis_step, lx, ly, x_range, y_range,
+                            output_path=f"{output_dir}/{simulation_name}_t{vis_step}.png")
+
+        if i % inputs["vis_config"]["ani_save_interval"] == 0:
+            if inputs["vis_config"]["save_animation"] == True:
+                # Make animation
+                # Call the function
+                for sim_data in LBM.result_dict.keys():
+                    utils.make_animation(
+                        LBM.result_dict, sim_data, npz_timesteps, lx, ly, x_range, y_range,
+                        output_path=f"{output_dir}/{simulation_name}.gif")

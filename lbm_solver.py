@@ -86,9 +86,6 @@ class LBMModel:
         self.S_dig_vec = ti.Vector.field(self.Q, ti.f32, shape=())
         self.S_dig_vec[None] = ti.Vector(S_dig_vec_np)
 
-        # Fluid properties
-
-
         # Static fields
         ti.static(self.e_xy)
         ti.static(self.w)
@@ -97,24 +94,31 @@ class LBMModel:
         ti.static(self.S_dig_vec)
 
         # Compute derived parameters
-        self.nnodes = self.lx * self.ly  # Total number of nodes
+        # yc: assume node spacing in lbm and gns is the same.
+        # yc: if you want to down-sample nodes for npz, set `nodes_lx` to smaller divisible fraction of `lx` and `nodes_ly` as well.
+        # ex: setting 80 for `nodes_lx` when lx=320 down-samples xnodes by factor of 4.
+        # Currently, lbm and npz has the same n-nodes by setting them same.
+        self.nodes_lx = self.lx
+        self.nodes_ly = self.ly
+
+        self.nnodes = self.nodes_lx * self.nodes_ly  # Total number of nodes
         self.ndims = 2  # Number of dimensions
-        self.ncells = (self.ly - 1) * (self.lx - 1)  # Total number of cells
-        self.ncells_row = self.lx - 1  # Number of cells per row
+        self.ncells = (self.nodes_lx - 1) * (self.nodes_ly - 1)  # Total number of cells
+        self.ncells_row = self.nodes_lx - 1  # Number of cells per row
 
         # Compute physical spacing between nodes
         self.dx = self.dy = self.lx_physical / self.lx
 
         # Define Lattice-Boltzmann model parameters
-        self.lbm_dx = self.lx // self.lx  # Lattice spacing in x-direction
-        self.lbm_dy = self.ly // self.ly  # Lattice spacing in y-direction
+        self.lbm_dx = self.lx // self.nodes_lx  # Lattice spacing in x-direction
+        self.lbm_dy = self.ly // self.nodes_ly  # Lattice spacing in y-direction
 
         self.j_indices = np.arange(self.nnodes)
-        self.lbm_x = (self.j_indices % self.lx) * self.lbm_dy
-        self.lbm_y = (self.j_indices // self.lx) * self.lbm_dy
+        self.lbm_x = (self.j_indices % self.nodes_lx) * self.lbm_dy
+        self.lbm_y = (self.j_indices // self.nodes_lx) * self.lbm_dy
 
         # Initialize parent_dict
-        self.parent_dict = {}
+        self.result_dict = {}
 
     def place_sphere(self, spheres):
         for sphere in spheres:
@@ -277,8 +281,8 @@ class LBMModel:
 
         # Node positions
         pos = np.zeros((self.timesteps, self.nnodes, self.ndims))
-        pos[:, :, 0] = (self.j_indices % self.lx) * self.dx
-        pos[:, :, 1] = (self.j_indices // self.lx) * self.dy
+        pos[:, :, 0] = (self.j_indices % self.nodes_lx) * self.dx
+        pos[:, :, 1] = (self.j_indices // self.nodes_lx) * self.dy
 
         # Node types
         node_type = np.zeros((self.timesteps, self.nnodes, 1), dtype=int)
