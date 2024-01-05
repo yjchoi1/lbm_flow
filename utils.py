@@ -7,10 +7,8 @@ MARKER_SIZE = 0.1
 SIZE_FACTOR = 10
 
 
-def gen_circles(n, x_max, y_max, radius_range):
+def gen_circles(n, x_range, y_range, radius_range):
 
-    x_min_offset = 3
-    y_min_offset = 0
     circles = []
 
     def is_overlapping(new_circle):
@@ -23,8 +21,8 @@ def gen_circles(n, x_max, y_max, radius_range):
     i = 0
     while len(circles) < n:
         radius = np.random.randint(radius_range[0], radius_range[1])
-        x = np.random.randint(radius + x_min_offset, x_max)
-        y = np.random.randint(0, y_max)
+        x = np.random.randint(x_range[0], x_range[1])
+        y = np.random.randint(y_range[0], y_range[1])
         new_circle = (x, y, radius)
 
         # prevent infinite loop
@@ -129,10 +127,10 @@ def make_animation(
             contour_levels, cmap='cividis', vmin=global_vel_mag_min, vmax=global_vel_mag_max)
 
         # Scatter plot for each node type with different color
-        ax.scatter(pos_timestep[mask0, 0], pos_timestep[mask0, 1], color='blue', s=MARKER_SIZE, label='Normal nodes')
-        ax.scatter(pos_timestep[mask4, 0], pos_timestep[mask4, 1], color='orange', s=MARKER_SIZE*2, label='Inlet nodes')
-        ax.scatter(pos_timestep[mask5, 0], pos_timestep[mask5, 1], color='green', s=MARKER_SIZE*2, label='Outlet nodes')
-        ax.scatter(pos_timestep[mask6, 0], pos_timestep[mask6, 1], color='red', s=MARKER_SIZE*2, label='Wall boundary')
+        # ax.scatter(pos_timestep[mask0, 0], pos_timestep[mask0, 1], color='blue', s=MARKER_SIZE, label='Normal nodes')
+        ax.scatter(pos_timestep[mask4, 0], pos_timestep[mask4, 1], color='orange', s=MARKER_SIZE*3, label='Inlet nodes')
+        ax.scatter(pos_timestep[mask5, 0], pos_timestep[mask5, 1], color='green', s=MARKER_SIZE*3, label='Outlet nodes')
+        ax.scatter(pos_timestep[mask6, 0], pos_timestep[mask6, 1], color='red', s=MARKER_SIZE*3, label='Wall boundary')
 
         # Create a colorbar and reduce its height
         cbar = fig.colorbar(cntr, ax=ax, shrink=0.4)
@@ -201,10 +199,10 @@ def plot_field(
         contour_levels, cmap='cividis', vmin=vel_mag_min, vmax=vel_mag_max)
 
     # Scatter plot for each node type with different color
-    ax.scatter(pos_timestep[mask0, 0], pos_timestep[mask0, 1], color='blue', s=MARKER_SIZE, label='Normal nodes')
-    ax.scatter(pos_timestep[mask4, 0], pos_timestep[mask4, 1], color='orange', s=MARKER_SIZE*2, label='Inlet nodes')
-    ax.scatter(pos_timestep[mask5, 0], pos_timestep[mask5, 1], color='green', s=MARKER_SIZE*2, label='Outlet nodes')
-    ax.scatter(pos_timestep[mask6, 0], pos_timestep[mask6, 1], color='red', s=MARKER_SIZE*2, label='Wall boundary')
+    # ax.scatter(pos_timestep[mask0, 0], pos_timestep[mask0, 1], color='blue', s=MARKER_SIZE, label='Normal nodes')
+    ax.scatter(pos_timestep[mask4, 0], pos_timestep[mask4, 1], color='orange', s=MARKER_SIZE*3, label='Inlet nodes')
+    ax.scatter(pos_timestep[mask5, 0], pos_timestep[mask5, 1], color='green', s=MARKER_SIZE*3, label='Outlet nodes')
+    ax.scatter(pos_timestep[mask6, 0], pos_timestep[mask6, 1], color='red', s=MARKER_SIZE*3, label='Wall boundary')
 
     # Create a colorbar and reduce its height
     cbar = fig.colorbar(cntr, ax=ax, shrink=0.4)

@@ -1,5 +1,6 @@
 import taichi as ti
 import numpy as np
+import sys
 from pyevtk.hl import gridToVTK
 from tqdm import tqdm
 
@@ -239,6 +240,8 @@ class LBMModel:
                     if I.x == 0:
                         if self.e_xy[s][0] == 1 and self.e_xy[s][1] == 0:
                             self.stream_f[I][s] = self.feq(s, self.rho[I], ti.Vector([self.v_left[I.y], self.v[I].y]))
+                            # print(self.v_left[I.y])
+                            # a=1
 
         for I in ti.grouped(self.v):
             if (I.x < self.lx and I.y < self.ly and self.is_solid[I] <= 0):
@@ -269,6 +272,9 @@ class LBMModel:
         velocity[timestep, :, 0] = v_[self.lbm_x, self.lbm_y, 0]
         velocity[timestep, :, 1] = v_[self.lbm_x, self.lbm_y, 1]
         pressure[timestep, :, 0] = rho_[self.lbm_x, self.lbm_y]
+        # a=1
+        # if timestep > 1:
+        #     sys.exit()
         return velocity, pressure
 
     def initialize_npz(self, spheres):
