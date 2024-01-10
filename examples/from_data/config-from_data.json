@@ -1,0 +1,30 @@
+{
+  "simulation_name": "porous",
+  "simulation_id_range": [0, 2],
+  "output_dir": "examples/from_data/outputs/",
+  "sim_config": {
+    "lx": 80,
+    "ly": 80,
+    "lx_physical": 1.6,
+    "nu": 0.0005,
+    "initial_vel": {
+      "autogen": false,
+      "from_data": "examples/from_data/velocity.csv"
+    },
+    "circle": {
+      "autogen": true,
+      "ncircles_range": [8, 10],
+      "radius_range": [7, 10],
+      "x_range": [13, 80],
+      "y_range": [0, 80]
+    },
+    "lbm_timesteps": 10000,
+    "save_interval": 20
+  },
+  "vis_config": {
+    "save_field": true,
+    "vis_steps": [0, 1, 2, 10, 50, 100, 150, 200, 300, 400, 499],
+    "save_animation": true,
+    "ani_save_interval": 1
+  }
+}
