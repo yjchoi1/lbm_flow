@@ -102,7 +102,7 @@ if __name__ == "__main__":
                 v_left_np = df.values[i, :].reshape(-1)
 
         # Save current velocity boundary condition
-        df = pd.DataFrame(v_left_np)
+        df = pd.DataFrame(v_left_np.reshape(1, -1))
         df.to_csv(f"{output_dir}/{current_sim_name}_velocity.csv", header=False, index=False)
 
         # Init LBM solver with the current domain setting
@@ -121,11 +121,12 @@ if __name__ == "__main__":
         else:
             print("Get obstacles from json data")
             f = open(sim_config["circle"]['from_data'])
-            circles = json.load(f)['circle_data'][i]
+            circle_data = json.load(f)['circle_data']
+            circles = circle_data[i]
 
         # Save current circle configs
         with open(f"{output_dir}/{current_sim_name}_circle.json", "w") as circle_file:
-            save_circle = {'circle_data': circles}
+            save_circle = {'circle_data': [circles]}
             json.dump(save_circle, circle_file, indent=2)
 
         # Run LBM
