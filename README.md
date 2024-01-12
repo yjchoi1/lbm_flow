@@ -1,11 +1,23 @@
 # Fluid flow simulation with Lattice Boltzmann Method (LBM)
 This code is for simulating fluid flow simulation through porous media
-using Lattice Boltzmann Method (LBM).
+using Lattice Boltzmann Method (LBM). The LBM solver is based on [link](https://github.com/Amber1995/Taichi-MRT-MultiphaseLBM)
 
 ## Simulation example
-![Simulation example](examples/random_gen/outputs/porous0.gif) 
+```shell
+python3 input_path="examples/random_gen/config-random_gen.json"
+```
+![Simulation example](examples/random_gen/outputs/porous0.gif)
+```shell
+python3 input_path="examples/from_data/config-from_data.json"
+```
 ![image alt >](examples/from_data/outputs/porous1.gif)
 Dots denotes lattice nodes.
+
+## Run
+```shell
+python3 input_path="config.json"
+```
+An example of the config files can be found in `examples/`. The options of `config.json` is explained below.
 
 ## Velocity input options
 
@@ -62,3 +74,7 @@ Obstacle file looks like as follows:
 Each low corresponds to the circular obstacle information for the associated simulation id, 
 where each entry corresponds to a circle's `x`, `y` and `r`. 
 `len(circle_data)` should match `simulation_id_range`.
+
+# Contributors
+Yongjin Choi
+Qiuyu Wang

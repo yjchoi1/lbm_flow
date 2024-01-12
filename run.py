@@ -34,7 +34,7 @@ def run(lbm_timesteps, save_interval):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--input_path', default="config.json", type=str, help="Input json file name")
+    parser.add_argument('--input_path', default="examples/random_gen/config-random_gen.json", type=str, help="Input json file name")
     args = parser.parse_args()
 
     # Get inputs from config json file
