@@ -76,5 +76,5 @@ where each entry corresponds to a circle's `x`, `y` and `r`.
 `len(circle_data)` should match `simulation_id_range`.
 
 # Contributors
-Yongjin Choi
-Qiuyu Wang
+* Yongjin Choi
+* Qiuyu Wang
