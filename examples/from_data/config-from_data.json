@@ -26,5 +26,8 @@
     "vis_steps": [0, 1, 2, 10, 50, 100, 150, 200, 300, 400, 499],
     "save_animation": true,
     "ani_save_interval": 1
+  },
+  "npz_options": {
+    "fixed_mesh": true
   }
 }

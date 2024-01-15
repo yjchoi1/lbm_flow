@@ -99,12 +99,12 @@ def make_animation(
         ax = fig.add_subplot(1, 1, 1, projection='rectilinear')
 
         # Extract node coordinates and velocity at the given timestep
-        coords = dict_input[obs_info]["pos"][timestep]
+        coords = dict_input[obs_info]["pos"][0]
         velocities = dict_input[obs_info]["velocity"][timestep]
 
         # Get the node_type and positions for the specific timestep
-        node_type_timestep = dict_input[obs_info]['node_type'][timestep, :, 0]
-        pos_timestep = dict_input[obs_info]['pos'][timestep]
+        node_type_timestep = dict_input[obs_info]['node_type'][0, :, 0]
+        pos_timestep = dict_input[obs_info]['pos'][0]
 
         # Create masks for each node type
         mask0 = node_type_timestep == 0
@@ -169,12 +169,12 @@ def plot_field(
     ax = fig.add_subplot(1, 1, 1, projection='rectilinear')
 
     # Extract node coordinates and velocity at the given timestep
-    coords = dict_input[obs_info]["pos"][timestep]
+    coords = dict_input[obs_info]["pos"][0]
     velocities = dict_input[obs_info]["velocity"][timestep]
 
     # Get the node_type and positions for the specific timestep
-    node_type_timestep = dict_input[obs_info]['node_type'][timestep, :, 0]
-    pos_timestep = dict_input[obs_info]['pos'][timestep]
+    node_type_timestep = dict_input[obs_info]['node_type'][0, :, 0]
+    pos_timestep = dict_input[obs_info]['pos'][0]
 
     # Create masks for each node type
     mask0 = node_type_timestep == 0

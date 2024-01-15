@@ -137,12 +137,19 @@ if __name__ == "__main__":
         # Reset solid nodes after LBM solver ends
         LBM.is_solid.fill(0)
         # Save result data
-        LBM.result_dict[current_sim_name] = data
+        if "npz_options" in inputs.keys() and inputs["npz_options"]["fixed_mesh"]:
+            data['pos'] = np.expand_dims(data['pos'][0], axis=0)
+            data['node_type'] = np.expand_dims(data['node_type'][0], axis=0)
+            data['cells'] = np.expand_dims(data['cells'][0], axis=0)
+            del data['pressure']
+            LBM.result_dict[current_sim_name] = data
+        else:
+            LBM.result_dict[current_sim_name] = data
         # Export to npz
         np.savez(f'{output_dir}/{current_sim_name}.npz', **LBM.result_dict)
 
         # Visualization
-        if inputs["vis_config"]["save_field"] and i in inputs["vis_config"]["vis_steps"]:
+        if inputs["vis_config"]["save_field"]:
             x_range = [0, lx_physical]
             y_range = [0, ly_physical]
 
