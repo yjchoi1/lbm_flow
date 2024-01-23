@@ -117,7 +117,6 @@ if __name__ == "__main__":
                 x_range=sim_config["circle"]['x_range'],
                 y_range=sim_config["circle"]['y_range'],
                 radius_range=sim_config["circle"]['radius_range'])
-            utils.visualize_circles_and_grid(circles, lx, ly)
         else:
             print("Get obstacles from json data")
             f = open(sim_config["circle"]['from_data'])
