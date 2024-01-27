@@ -6,6 +6,8 @@ import os
 from tqdm import tqdm
 from lbm_solver import LBMModel
 import utils
+from matplotlib import pyplot as plt
+import scipy
 
 
 # Define run LBM
@@ -83,7 +85,17 @@ if __name__ == "__main__":
                 if args[2] != ly:
                     raise ValueError("Size of input initial velocity array should be same as `ly`")
                 else:
-                    v_left_np = np.random.uniform(args[0], args[1], args[2])
+                    # v_left_np = np.random.uniform(args[0], args[1], args[2])
+                    # v_left_np[0] = 0
+                    # v_left_np[-1] = 0
+                    x = np.linspace(0, ly - 1, 20)
+                    xnew = np.linspace(0, ly - 1, ly)
+                    y = np.random.normal(0.01, 0.001, len(x))
+                    # Generate a smooth line from the random points
+                    f = scipy.interpolate.interp1d(x, y, kind='cubic')
+                    v_left_np = f(xnew)
+                    v_left_np[0] = 0
+                    v_left_np[-1] = 0
             elif sim_config["initial_vel"]["option"] == "normal":
                 raise NotImplementedError
             elif sim_config["initial_vel"]["option"] == "quad":
@@ -146,6 +158,23 @@ if __name__ == "__main__":
             LBM.result_dict[current_sim_name] = data
         # Export to npz
         np.savez(f'{output_dir}/{current_sim_name}.npz', **LBM.result_dict)
+
+        node_pos = data['pos'][0]
+        x0_index = np.where(node_pos[:, 0] == 0)
+        left_velocity0 = data["velocity"][0][x0_index, 0]
+        left_velocity1 = data["velocity"][1][x0_index, 0]
+        left_velocity10 = data["velocity"][10][x0_index, 0]
+        left_velocity20 = data["velocity"][20][x0_index, 0]
+        left_velocity99 = data["velocity"][99][x0_index, 0]
+
+        plt.plot(np.arange(80), left_velocity0[0], 'grey', label='0')
+        plt.plot(np.arange(80), left_velocity1[0], 'g', label='1')
+        plt.plot(np.arange(80), left_velocity10[0], 'green', label='10')
+        plt.plot(np.arange(80), left_velocity99[0], 'red', label='99')
+        plt.plot(np.arange(80), v_left_np, 'blue', label='v_left', ls='--')
+        # plt.ylim(0.0, 0.16)
+        plt.legend()
+        plt.show()
 
         # Visualization
         if inputs["vis_config"]["save_field"]:

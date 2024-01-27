@@ -238,10 +238,15 @@ class LBMModel:
             if (I.x < self.lx and I.y < self.ly and self.is_solid[I] <= 0):
                 for s in ti.static(range(self.Q)):
                     if I.x == 0:
-                        if self.e_xy[s][0] == 1 and self.e_xy[s][1] == 0:
+                        if self.e_xy[s][0] < 2:
                             self.stream_f[I][s] = self.feq(s, self.rho[I], ti.Vector([self.v_left[I.y], self.v[I].y]))
                             # print(self.v_left[I.y])
                             # a=1
+
+                    # Set -1 directional velocity of the rightmost boundary to 0 so that velocity not bounce back
+                    if I.x == self.lx - 1:
+                        if self.e_xy[s][0] == -1:
+                            self.stream_f[I][s] = self.feq(s, self.rho[I], ti.Vector([0., self.v[I].y]))
 
         for I in ti.grouped(self.v):
             if (I.x < self.lx and I.y < self.ly and self.is_solid[I] <= 0):
