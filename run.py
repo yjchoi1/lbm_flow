@@ -7,7 +7,6 @@ from tqdm import tqdm
 from lbm_solver import LBMModel
 import utils
 from matplotlib import pyplot as plt
-import scipy
 
 
 # Define run LBM
@@ -36,7 +35,7 @@ def run(lbm_timesteps, save_interval):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--input_path', default="examples/random_gen/config-random_gen.json", type=str, help="Input json file name")
+    parser.add_argument('--input_path', default="examples/random_gen/config-random_gen_quad.json", type=str, help="Input json file name")
     args = parser.parse_args()
 
     # Get inputs from config json file
@@ -77,33 +76,18 @@ if __name__ == "__main__":
         current_sim_name = f"{simulation_name}{i}"
 
         # Velocity boundary condition
-        # TODO: velocity distribution options
         if sim_config["initial_vel"]["autogen"]:
             print("Generate velocity boundary condition randomly")
-            if sim_config["initial_vel"]["option"] == "uniform":
-                args = sim_config["initial_vel"]["args"]
-                if args[2] != ly:
-                    raise ValueError("Size of input initial velocity array should be same as `ly`")
-                else:
-                    v_left_np = np.random.uniform(args[0], args[1], args[2])
-                    v_left_np[0] = 0
-                    v_left_np[-1] = 0
-            elif sim_config["initial_vel"]["option"] == "normal":
-                raise NotImplementedError
-            elif sim_config["initial_vel"]["option"] == "quad":
-                raise NotImplementedError
-            elif sim_config["initial_vel"]["option"] == "from_csv":
-                raise NotImplementedError
-            else:
-                raise ValueError("Not implemented velocity option. Choose among `normal`, `uniform, `quad`")
+            v_left_np = utils.vel_autogen(
+                ly,
+                shape_option=sim_config["initial_vel"]["option"],
+                args=sim_config["initial_vel"]["args"])
         else:
             print("Get velocity boundary condition from data")
-            df = pd.read_csv(sim_config["initial_vel"]["from_data"], header=None)
-            if df.values.shape[0] != len(simulation_ids) or df.values.shape[1] != ly:
-                raise ValueError("Check the size of the `velocity.csv`")
-            else:
-                # get i-th velocity in csv file.
-                v_left_np = df.values[i, :].reshape(-1)
+            v_left_np = utils.vel_from_data(
+                current_sim_id=i, ly=ly,
+                csv_file_path=sim_config["initial_vel"]["from_data"],
+                n_simulations=len(simulation_ids))
 
         # Save current velocity boundary condition
         df = pd.DataFrame(v_left_np.reshape(1, -1))
@@ -152,6 +136,9 @@ if __name__ == "__main__":
         np.savez(f'{output_dir}/{current_sim_name}.npz', **LBM.result_dict)
 
         # Visualization
+        utils.plot_vleft(
+            ly, data, v_left_np, save_path=f"{output_dir}/vleft_{current_sim_name}.png")
+
         if inputs["vis_config"]["save_field"]:
             x_range = [0, lx_physical]
             y_range = [0, ly_physical]
