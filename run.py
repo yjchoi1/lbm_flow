@@ -15,8 +15,8 @@ def run(lbm_timesteps, save_interval):
     nnodes = LBM.lx * LBM.ly
 
     # Initiate vel and pressure array
-    velocity = np.zeros((LBM.timesteps, nnodes, LBM.ndims))
-    pressure = np.zeros((LBM.timesteps, nnodes, 1))
+    velocity = np.zeros((LBM.timesteps, nnodes, LBM.ndims), dtype=np.float32)
+    pressure = np.zeros((LBM.timesteps, nnodes, 1), dtype=np.float32)
     LBM.init_field()
 
     # Start simulation
@@ -30,12 +30,12 @@ def run(lbm_timesteps, save_interval):
             current_save_step = step // save_interval
             velocity, pressure = LBM.export_npz(current_save_step, velocity, pressure)
 
-    return velocity, pressure
+    return np.float32(velocity), np.float32(pressure)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--input_path', default="examples/random_gen/config-random_gen_quad.json", type=str, help="Input json file name")
+    parser.add_argument('--input_path', default="/work2/08264/baagee/frontera/gns-meshnet-data/lbm/dataset_trial4/config.json", type=str, help="Input json file name")
     args = parser.parse_args()
 
     # Get inputs from config json file
@@ -104,7 +104,8 @@ if __name__ == "__main__":
                 n=np.random.randint(sim_config["circle"]['ncircles_range'][0], sim_config["circle"]['ncircles_range'][1]),
                 x_range=sim_config["circle"]['x_range'],
                 y_range=sim_config["circle"]['y_range'],
-                radius_range=sim_config["circle"]['radius_range'])
+                radius_range=sim_config["circle"]['radius_range'],
+                min_distance=sim_config["circle"]['min_distance'])
         else:
             print("Get obstacles from json data")
             f = open(sim_config["circle"]['from_data'])
@@ -125,7 +126,7 @@ if __name__ == "__main__":
         LBM.is_solid.fill(0)
         # Save result data
         if "npz_options" in inputs.keys() and inputs["npz_options"]["fixed_mesh"]:
-            data['pos'] = np.expand_dims(data['pos'][0], axis=0)
+            data['pos'] = np.float32(np.expand_dims(data['pos'][0], axis=0))
             data['node_type'] = np.expand_dims(data['node_type'][0], axis=0)
             data['cells'] = np.expand_dims(data['cells'][0], axis=0)
             del data['pressure']
@@ -133,7 +134,11 @@ if __name__ == "__main__":
         else:
             LBM.result_dict[current_sim_name] = data
         # Export to npz
-        np.savez(f'{output_dir}/{current_sim_name}.npz', **LBM.result_dict)
+        np.savez_compressed(f'{output_dir}/{current_sim_name}.npz', **LBM.result_dict)
+
+        # Save config file being used
+        with open(f"{output_dir}/config.json", "w") as input_file:
+            json.dump(inputs, input_file, indent=4)
 
         # Visualization
         utils.plot_vleft(
@@ -159,6 +164,3 @@ if __name__ == "__main__":
                     LBM.result_dict, sim_data, npz_timesteps, lx, ly, x_range, y_range,
                     output_path=f"{output_dir}/{current_sim_name}.gif")
 
-    # Save config file being used
-    with open(f"{output_dir}/config.json", "w") as input_file:
-        json.dump(inputs, input_file, indent=4)

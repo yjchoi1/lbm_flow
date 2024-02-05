@@ -296,7 +296,7 @@ class LBMModel:
         pos[:, :, 1] = (self.j_indices // self.nodes_lx) * self.dy
 
         # Node types
-        node_type = np.zeros((self.timesteps, self.nnodes, 1), dtype=int)
+        node_type = np.zeros((self.timesteps, self.nnodes, 1), dtype=np.int32)
 
         # Create lbm_x and lbm_y arrays with shape (timesteps, nnodes, 1)
         lbm_x_arr = np.broadcast_to(self.lbm_x[None, :, None], (self.timesteps, self.nnodes, 1))
@@ -312,7 +312,7 @@ class LBMModel:
 
         # Cells
         j_indices_cells = np.arange(self.ncells)
-        cell = np.zeros((self.timesteps, self.ncells, self.nnodes_per_cell), dtype=int)
+        cell = np.zeros((self.timesteps, self.ncells, self.nnodes_per_cell), dtype=np.int32)
         cell[:, :, 0] = j_indices_cells + j_indices_cells // self.ncells_row
         cell[:, :, 1] = cell[:, :, 0] + 1
         cell[:, :, 2] = cell[:, :, 0] + self.ncells_row + 2

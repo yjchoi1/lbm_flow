@@ -18,12 +18,18 @@ def vel_autogen(ly, shape_option, args):
     print("Generate velocity boundary condition randomly")
 
     if shape_option == "uniform":
-        if args[2] != ly:
-            raise ValueError("Size of input initial velocity array should be same as `ly`")
+        if isinstance(args, dict):
+            peak = np.random.uniform(args['peak'][0], args['peak'][1])
+            npoints = args['npoints']
+            v_left_np = np.full(npoints, peak)
         else:
-            v_left_np = np.random.uniform(args[0], args[1], args[2])
-            v_left_np[0] = 0
-            v_left_np[-1] = 0
+            if args[2] != ly:
+                raise ValueError("Size of input initial velocity array should be same as `ly`")
+            else:
+                v_left_np = np.random.uniform(args[0], args[1], args[2])
+
+        v_left_np[0] = 0
+        v_left_np[-1] = 0
 
     elif shape_option == "normal":
         raise NotImplementedError
@@ -79,14 +85,14 @@ def vel_from_data(current_sim_id, ly, csv_file_path, n_simulations):
 
     return v_left_np
 
-def gen_circles(n, x_range, y_range, radius_range):
+def gen_circles(n, x_range, y_range, radius_range, min_distance=0):
 
     circles = []
 
     def is_overlapping(new_circle):
         x_new, y_new, r_new = new_circle
         for x, y, r in circles:
-            if np.sqrt((x_new - x) ** 2 + (y_new - y) ** 2) < (r_new + r):
+            if np.sqrt((x_new - x) ** 2 + (y_new - y) ** 2) < (r_new + r + min_distance):
                 return True
         return False
 
@@ -99,8 +105,15 @@ def gen_circles(n, x_range, y_range, radius_range):
 
         # prevent infinite loop
         i += 1
+        j = 0
         if i > 1e6:
-            break
+            print(f"Try new non-overlapping barrier config")
+            i = 0
+            j += 1
+            circles = []
+
+            if j >= 10:
+                raise Exception(f"Cannot generate non overlapping obstacles in {j} trial")
 
         # Check overlap of the new circle and append if pass
         if not is_overlapping(new_circle):
@@ -208,7 +221,7 @@ def make_animation(
         cbar = fig.colorbar(cntr, ax=ax, shrink=0.4)
         cbar.set_label('Velocity magnitude')
         # Limit the colorbar's legend to three digits
-        cbar.formatter = FormatStrFormatter('%.3f')
+        cbar.formatter = FormatStrFormatter('%.3e')
         cbar.update_ticks()
 
         ax.set_title('Velocity field at timestep {} with obstacle {}'.format(timestep, obs_info))
@@ -226,9 +239,9 @@ def make_animation(
         # plt.show()
 
     ani = FuncAnimation(
-        fig, animate, frames=np.arange(0, total_timestep, 5), interval=20)
+        fig, animate, frames=np.arange(0, total_timestep, 10), interval=20)
 
-    ani.save(output_path, dpi=100, fps=15, writer='imagemagick')
+    ani.save(output_path, dpi=100, fps=10, writer='imagemagick')
     # print(f"Animation saved to: {animation_filename}")
 
 def plot_field(
@@ -280,7 +293,7 @@ def plot_field(
     cbar = fig.colorbar(cntr, ax=ax, shrink=0.4)
     cbar.set_label('Velocity magnitude')
     # Limit the colorbar's legend to three digits
-    cbar.formatter = FormatStrFormatter('%.3f')
+    cbar.formatter = FormatStrFormatter('%.3e')
     cbar.update_ticks()
 
     ax.set_title('Velocity field at timestep {} with obstacle {}'.format(timestep, obs_info))

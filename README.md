@@ -24,15 +24,14 @@ An example of the config files can be found in `examples/`. The options of `conf
 ### Uniform
 * In `config["sim_config"]["initial_vel"]`, set `autogen` `true`.
 * set `option` to `uniform`
-* Set `args` based on `[min, max, nnodes_left]`. This follows numpy argument for 
-[`numpy.random.uniform`](https://numpy.org/doc/stable/reference/random/generated/numpy.random.uniform.html#numpy-random-uniform).
+* "args" = {"peak": [min, max], "npoints": ly}
 
 ### Normal
 `args = [...]` (Not yet implemented)
 
 ### Quad or multi-quad 
 * set `option` to `quad` or `multi_quad` depending on the purpose.  
-* `args = [peak, array_length]` 
+* "args" = {"peak": [min, max], "npoints": ly}
 
 
 
