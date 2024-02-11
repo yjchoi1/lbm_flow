@@ -65,7 +65,7 @@ def vel_autogen(ly, shape_option, args):
         raise NotImplementedError
 
     else:
-        raise ValueError("Not implemented velocity option. Choose among `normal`, `uniform, `quad`")
+        raise ValueError("Not implemented velocity option. Choose among `normal`, `quad, `multi_quad`")
 
     v_left_np[0] = 0
     v_left_np[-1] = 0
